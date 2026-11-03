@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0e14">
+  <title>NEXORA AUDIO X — Mobile Audio Production Studio</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Genuine MP3 Encoder Library (Disclosed CDN Dependency) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js" defer></script>
+</head>
+<body>
+  <!-- Top App Header -->
+  <header class="app-header">
+    <div class="brand-group">
+      <div class="brand-logo" aria-hidden="true">NX</div>
+      <div>
+        <h1 class="brand-title">NEXORA AUDIO X</h1>
+        <p class="brand-subtitle">DSP &amp; Mobile Production Studio</p>
+      </div>
+    </div>
+    <div class="header-status">
+      <span id="audioEngineBadge" class="status-pill status-idle">Engine Standby</span>
+      <span id="activeBufferBadge" class="status-pill status-buffer">No Active Buffer</span>
+    </div>
+  </header>
+
+  <!-- Global Notification Toast -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <!-- Navigation Bar (All 8 Mandatory Feature Systems) -->
+  <nav class="module-nav" aria-label="Studio Modules">
+    <button class="nav-tab active" data-target="sec-recorder">
+      <span class="nav-num">01</span>
+      <span class="nav-label">Recorder</span>
+    </button>
+    <button class="nav-tab" data-target="sec-cleaner">
+      <span class="nav-num">02</span>
+      <span class="nav-label">Cleaner</span>
+    </button>
+    <button class="nav-tab" data-target="sec-tuning">
+      <span class="nav-num">03</span>
+      <span class="nav-label">Tuning</span>
+    </button>
+    <button class="nav-tab" data-target="sec-tts">
+      <span class="nav-num">04</span>
+      <span class="nav-label">AI TTS</span>
+    </button>
+    <button class="nav-tab" data-target="sec-speech-ctrl">
+      <span class="nav-num">05</span>
+      <span class="nav-label">Speech Ctrl</span>
+    </button>
+    <button class="nav-tab" data-target="sec-editor">
+      <span class="nav-num">06</span>
+      <span class="nav-label">Editor</span>
+    </button>
+    <button class="nav-tab" data-target="sec-mixer">
+      <span class="nav-num">07</span>
+      <span class="nav-label">Mixer</span>
+    </button>
+    <button class="nav-tab" data-target="sec-library">
+      <span class="nav-num">08</span>
+      <span class="nav-label">Library &amp; Export</span>
+    </button>
+  </nav>
+
+  <!-- Main Workspace Container -->
+  <main class="workspace">
+
+    <!-- ===================================================================
+         FEATURE 01 — ULTRA-CLEAR PROFESSIONAL VOICE RECORDING
+         =================================================================== -->
+    <section id="sec-recorder" class="studio-module active">
+      <div class="module-header">
+        <div>
+          <span class="module-tag">FEATURE 01</span>
+          <h2>Ultra-Clear Voice Recording</h2>
+        </div>
+        <span id="recPermissionBadge" class="badge">Mic: Unchecked</span>
+      </div>
+
+      <p class="tech-note">
+        Hardware &amp; Browser Notice: Recording fidelity depends on your physical microphone transducer and Android audio HAL. Keeping tabs in the foreground prevents OS suspension.
+      </p>
+
+      <div class="card">
+        <div class="rec-display-row">
+          <div class="rec-timer-box">
+            <span id="recStateIndicator" class="rec-dot"></span>
+            <span id="recTimer" class="mono-timer">00:00:00.0</span>
+          </div>
+          <div class="meter-box">
+            <div class="meter-labels">
+              <span>Level (dBFS)</span>
+              <span id="recDbValue" class="mono-sm">-∞ dB</span>
+            </div>
+            <div class="meter-track">
+              <div id="recMeterBar" class="meter-fill"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="canvas-wrap">
+          <canvas id="recWaveformCanvas" width="800" height="160"></canvas>
+          <span class="canvas-label">Live Time-Domain Input Monitor</span>
+        </div>
+
+        <div class="btn-row primary-transport">
+          <button id="btnRecStart" class="btn btn-danger">Start Recording</button>
+          <button id="btnRecPause" class="btn btn-secondary" disabled>Pause</button>
+          <button id="btnRecResume" class="btn btn-secondary" disabled>Resume</button>
+          <button id="btnRecStop" class="btn btn-primary" disabled>Stop &amp; Finalize</button>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>Hardware &amp; Stream Constraints</h3>
+          <div class="form-group">
+            <label for="recDeviceSelect">Microphone Input Device</label>
+            <div class="inline-input">
+              <select id="recDeviceSelect">
+                <option value="default">Default System Microphone</option>
+              </select>
+              <button id="btnRefreshDevices" class="btn btn-sm" title="Refresh Input Devices">Refresh</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="recSampleRate">Target Sample Rate</label>
+            <select id="recSampleRate">
+              <option value="48000" selected>48,000 Hz (Broadcast Standard)</option>
+              <option value="44100">44,100 Hz (CD Standard)</option>
+            </select>
+          </div>
+          <div class="toggle-list">
+            <label class="toggle-item">
+              <input type="checkbox" id="chkEchoCancel" checked>
+              <span>Hardware Echo Cancellation</span>
+            </label>
+            <label class="toggle-item">
+              <input type="checkbox" id="chkNoiseSuppression" checked>
+              <span>Browser Noise Suppression</span>
+            </label>
+            <label class="toggle-item">
+              <input type="checkbox" id="chkAutoGain" checked>
+              <span>Automatic Gain Control (AGC)</span>
+            </label>
+          </div>
+          <div id="recConstraintSupportInfo" class="meta-footnote">Detecting supported browser constraints...</div>
+        </div>
+
+        <div class="card">
+          <h3>Captured Recording Inspector</h3>
+          <div id="recResultMeta" class="meta-grid">
+            <div><span>Status:</span> <strong id="recMetaStatus">No recording yet</strong></div>
+            <div><span>MIME Codec:</span> <strong id="recMetaMime">-</strong></div>
+            <div><span>Duration:</span> <strong id="recMetaDuration">0.00 s</strong></div>
+            <div><span>Sample Rate:</span> <strong id="recMetaSR">-</strong></div>
+          </div>
+          <audio id="recPreviewPlayer" controls class="audio-player"></audio>
+          <div class="form-group">
+            <label for="recCustomName">Recording Title</label>
+            <input type="text" id="recCustomName" placeholder="e.g. Vocal_Take_01">
+          </div>
+          <div class="btn-row">
+            <button id="btnRecSaveLib" class="btn btn-primary" disabled>Save to Library</button>
+            <button id="btnRecSendCleaner" class="btn btn-secondary" disabled>Load in Cleaner</button>
+            <button id="btnRecSendEditor" class="btn btn-secondary" disabled>Load in Editor</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         FEATURE 02 — NEXORA ADVANCED VOICE CLEANER
+         =================================================================== -->
+    <section id="sec-cleaner" class="studio-module">
+      <div class="module-header">
+        <div>
+          <span class="module-tag">FEATURE 02</span>
+          <h2>Nexora Advanced Voice Cleaner</h2>
+        </div>
+        <span id="cleanerEngineModeBadge" class="badge badge-accent">Mode: Local WebAudio DSP</span>
+      </div>
+
+      <p class="tech-note">
+        Transparency Notice: Local mode uses real multi-stage Web Audio DSP (steep high-pass rumble filter, 50/60 Hz harmonic notch array, adaptive spectral envelope noise gate, and presence clarity EQ). It is not a neural model unless you configure an external AI denoising endpoint below.
+      </p>
+
+      <div class="card">
+        <div class="toolbar-row">
+          <div class="file-load-group">
+            <label class="btn btn-secondary" for="cleanerFileInput">Import Audio File</label>
+            <input type="file" id="cleanerFileInput" accept="audio/*" hidden>
+            <button id="btnCleanerUseActive" class="btn btn-secondary">Use Active Studio Audio</button>
+          </div>
+          <span id="cleanerSourceInfo" class="mono-sm">Source: None loaded</span>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <h4>Original Recording (Preserved)</h4>
+            <canvas id="cleanerOrigCanvas" class="mini-wave" width="500" height="90"></canvas>
+            <audio id="cleanerOrigPlayer" controls class="audio-player"></audio>
+          </div>
+          <div>
+            <h4>Cleaned Output Preview</h4>
+            <canvas id="cleanerProcCanvas" class="mini-wave" width="500" height="90"></canvas>
+            <audio id="cleanerProcPlayer" controls class="audio-player"></audio>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>DSP Voice Cleaning Parameters</h3>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="cleanIntensity">Noise Reduction Intensity</label>
+              <span id="valCleanIntensity" class="mono-sm">55%</span>
+            </div>
+            <input type="range" id="cleanIntensity" min="0" max="100" value="55">
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="cleanGateThresh">Noise Gate Threshold</label>
+              <span id="valCleanGateThresh" class="mono-sm">-42 dB</span>
+            </div>
+            <input type="range" id="cleanGateThresh" min="-70" max="-15" value="-42">
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="cleanRumbleCut">Low-Frequency Rumble Cutoff (HPF)</label>
+              <span id="valCleanRumbleCut" class="mono-sm">95 Hz</span>
+            </div>
+            <input type="range" id="cleanRumbleCut" min="20" max="220" value="95">
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="cleanHissCut">High-Frequency Hiss Roll-off (LPF)</label>
+              <span id="valCleanHissCut" class="mono-sm">11500 Hz</span>
+            </div>
+            <input type="range" id="cleanHissCut" min="5000" max="18000" step="100" value="11500">
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="cleanClarity">Voice Clarity &amp; Presence Boost</label>
+              <span id="valCleanClarity" class="mono-sm">+4.0 dB</span>
+            </div>
+            <input type="range" id="cleanClarity" min="0" max="12" step="0.5" value="4">
+          </div>
+
+          <div class="form-group">
+            <label for="cleanHumFreq">Power-Line Hum Notch Filter (1st–3rd Harmonics)</label>
+            <select id="cleanHumFreq">
+              <option value="0">Off</option>
+              <option value="50" selected>50 Hz (India / Europe / Asia Standard)</option>
+              <option value="60">60 Hz (Americas Standard)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Processing &amp; External AI Endpoint</h3>
+          <div class="form-group">
+            <label for="cleanerAiEndpoint">Optional External Neural Denoising API Endpoint (POST)</label>
+            <input type="url" id="cleanerAiEndpoint" placeholder="https://your-proxy.example.com/api/denoise">
+          </div>
+          <div class="form-group">
+            <label for="cleanerAiToken">Session Auth Token (Kept in volatile memory only)</label>
+            <input type="password" id="cleanerAiToken" placeholder="Optional Bearer token">
+          </div>
+
+          <div class="progress-box">
+            <div class="slider-header">
+              <span id="cleanerProgressLabel">Ready to process</span>
+              <span id="cleanerProgressPct" class="mono-sm">0%</span>
+            </div>
+            <div class="progress-track">
+              <div id="cleanerProgressBar" class="progress-fill"></div>
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button id="btnRunCleaner" class="btn btn-primary">Run Voice Cleaner</button>
+            <button id="btnCancelCleaner" class="btn btn-danger" disabled>Cancel</button>
+          </div>
+
+          <hr class="divider">
+
+          <div class="btn-row">
+            <button id="btnCleanerSaveLib" class="btn btn-secondary" disabled>Save Cleaned to Library</button>
+            <button id="btnCleanerExportWav" class="btn btn-secondary" disabled>Download Cleaned WAV</button>
+            <button id="btnCleanerToTuning" class="btn btn-secondary" disabled>Send to Tuning</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         FEATURE 03 — ADVANCED VOICE TUNING STUDIO
+         =================================================================== -->
+    <section id="sec-tuning" class="studio-module">
+      <div class="module-header">
+        <div>
+          <span class="module-tag">FEATURE 03</span>
+          <h2>Advanced Voice Tuning Studio</h2>
+        </div>
+        <span id="tuningClipBadge" class="badge">Peak: Safe</span>
+      </div>
+
+      <div class="card">
+        <div class="toolbar-row">
+          <div class="file-load-group">
+            <label class="btn btn-secondary" for="tuningFileInput">Import Audio</label>
+            <input type="file" id="tuningFileInput" accept="audio/*" hidden>
+            <button id="btnTuningUseActive" class="btn btn-secondary">Use Active Studio Audio</button>
+          </div>
+          <div class="preset-group">
+            <label for="tuningPresetSelect">Preset:</label>
+            <select id="tuningPresetSelect">
+              <option value="neutral">Studio Neutral (Flat)</option>
+              <option value="podcast">Podcast Warmth</option>
+              <option value="broadcast">Broadcast Crisp</option>
+              <option value="cinema">Deep Documentary</option>
+              <option value="bright">Bright Air Vocal</option>
+            </select>
+            <button id="btnTuningReset" class="btn btn-sm">Reset All</button>
+          </div>
+        </div>
+
+        <div class="canvas-wrap">
+          <canvas id="tuningSpectrumCanvas" width="800" height="130"></canvas>
+          <span class="canvas-label">Real-Time Frequency Spectrum Analyser</span>
+        </div>
+
+        <div class="btn-row">
+          <button id="btnTuningPlay" class="btn btn-primary" disabled>Start Live Preview</button>
+          <button id="btnTuningStop" class="btn btn-secondary" disabled>Stop Preview</button>
+          <button id="btnTuningNormalize" class="btn btn-secondary" disabled>Normalize Source (-1 dBFS)</button>
+          <button id="btnTuningRenderSave" class="btn btn-primary" disabled>Render &amp; Save to Library</button>
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <!-- Pitch, Filters, Tone -->
+        <div class="card">
+          <h3>Pitch &amp; Core Tone</h3>
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="tunePitch">Pitch Shift (Independent OLA)</label>
+              <span id="valTunePitch" class="mono-sm">0 st</span>
+            </div>
+            <input type="range" id="tunePitch" min="-12" max="12" step="1" value="0">
+          </div>
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="tuneBass">Bass (120 Hz Low Shelf)</label>
+              <span id="valTuneBass" class="mono-sm">0.0 dB</span>
+            </div>
+            <input type="range" id="tuneBass" min="-15" max="15" step="0.5" value="0">
+          </div>
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="tuneTreble">Treble (6 kHz High Shelf)</label>
+              <span id="valTuneTreble" class="mono-sm">0.0 dB</span>
+            </div>
+            <input type="range" id="tuneTreble" min="-15" max="15" step="0.5" value="0">
+          </div>
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="tuneClarity">Voice Clarity (3.2 kHz Presence)</label>
+              <span id="valTuneClarity" class="mono-sm">0.0 dB</span>
+            </div>
+            <input type="range" id="tuneClarity" min="-10" max="12" step="0.5" value="0">
+          </div>
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="tuneHPF">High-Pass Filter</label>
+              <span id="valTuneHPF" class="mono-sm">30 Hz</span>
+            </div>
+            <input type="range" id="tuneHPF" min="20" max="500" step="5" value="30">
+          </div>
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="tuneLPF">Low-Pass Filter</label>
+              <span id="valTuneLPF" class="mono-sm">18000 Hz</span>
+            </div>
+            <input type="range" id="tuneLPF" min="2000" max="20000" step="200" value="18000">
+          </div>
+        </div>
+
+        <!-- 5-Band Parametric EQ -->
+        <div class="card">
+          <h3>5-Band Graphic Equalizer</h3>
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="eqBand1">100 Hz (Sub / Body)</label>
+              <span id="valEqBand1" class="mono-sm">0.0 dB</span>
+            </div>
+            <input type="range" id="eqBand1" min="-12" max="12" step="0.5" value="0">
+          </div>
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="eqBand2">350 Hz (Warmth / Mud)</label>
+              <span id="valEqBand2" class="mono-sm">0.0 dB</span>
+            </div>
+            <input type="range" id="eqBand2" min="-12" max="12" step="0.5" value="0">
+          </div>
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="eqBand3">1,000 Hz (Nasal / Center)</label>
+              <span id="valEqBand3" class="mono-sm">0.0 dB</span>
+            </div>
+            <input type="range" id="eqBand3" min="-12" max="12" step="0.5" value="0">
+          </div>
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="eqBand4">3,500 Hz (Articulation)</label>
+              <span id="valEqBand4" class="mono-sm">0.0 dB</span>
+            </div>
+            <input type="range" id="eqBand4" min="-12" max="12" step="0.5" value="0">
+          </div>
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="eqBand5">10,000 Hz (Air / Brilliance)</label>
+              <span id="valEqBand5" class="mono-sm">0.0 dB</span>
+            </div>
+            <input type="range" id="eqBand5" min="-12" max="12" step="0.5" value="0">
+          </div>
+        </div>
+
+        <!-- Dynamics, Spatial & Master -->
+        <div class="card">
+          <h3>Dynamics, Space &amp; Gain</h3>
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="tuneCompThresh">Compressor Threshold</label>
+              <span id="valTuneCompThresh" class="mono-sm">-20 dB</span>
+            </div>
+            <input type="range" id="tuneCompThresh" min="-60" max="0" step="1" value="-20">
+          </div>
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="tuneCompRatio">Compressor Ratio</label>
+              <span id="valTuneCompRatio" class="mono-sm">3:1</span>
+            </div>
+            <input type="range" id="tuneCompRatio" min="1" max="20" step="0.5" value="3">
+          </div>
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="tuneReverbMix">Studio Reverb Wet Mix</label>
+              <span id="valTuneReverbMix" class="mono-sm">0%</span>
+            </div>
+            <input type="range" id="tuneReverbMix" min="0" max="80" step="1" value="0">
+          </div>
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="tuneEchoMix">Delay / Echo Mix (280 ms)</label>
+              <span id="valTuneEchoMix" class="mono-sm">0%</span>
+            </div>
+            <input type="range" id="tuneEchoMix" min="0" max="75" step="1" value="0">
+          </div>
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="tuneMasterGain">Master Output Gain (Brickwall Limited)</label>
+              <span id="valTuneMasterGain" class="mono-sm">100%</span>
+            </div>
+            <input type="range" id="tuneMasterGain" min="0" max="200" step="1" value="100">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         FEATURE 04 — NEXORA NATURAL AI TEXT-TO-SPEECH
+         =================================================================== -->
+    <section id="sec-tts" class="studio-module">
+      <div class="module-header">
+        <div>
+          <span class="module-tag">FEATURE 04</span>
+          <h2>Nexora AI Text-to-Speech Studio</h2>
+        </div>
+        <span id="ttsProviderBadge" class="badge">Provider: Browser Fallback + Formant Synth</span>
+      </div>
+
+      <p class="tech-note">
+        Provider Transparency: Connect an external Neural TTS REST endpoint below for cloud neural synthesis and direct neural audio file downloads. When unconfigured, playback uses your device's local <code>SpeechSynthesis</code> voices, and file export uses Nexora's local acoustic formant synthesizer (browser security prohibits capturing raw PCM directly from OS <code>speechSynthesis</code>).
+      </p>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>Script &amp; Language Input</h3>
+          <div class="form-group">
+            <label for="ttsLanguageSelect">Synthesis Language</label>
+            <select id="ttsLanguageSelect">
+              <option value="en-US">English (United States - en-US)</option>
+              <option value="en-IN">English (India - en-IN)</option>
+              <option value="hi-IN">Hindi (हिन्दी - hi-IN)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="ttsVoiceProfile">Seven Studio Voice Profiles</label>
+            <select id="ttsVoiceProfile">
+              <option value="profile_1">01. Aarav — Studio Narrator (Balanced Baritone)</option>
+              <option value="profile_2">02. Diya — Warm Conversational (Clear Mezzo)</option>
+              <option value="profile_3">03. Kabir — Deep Documentary (Low Resonance)</option>
+              <option value="profile_4">04. Meera — Crisp Educator (Articulate Mid-High)</option>
+              <option value="profile_5">05. Rohan — Dynamic Broadcast (Energetic Cadence)</option>
+              <option value="profile_6">06. Ananya — Soft Storyteller (Gentle Intimate)</option>
+              <option value="profile_7">07. Vikram — Authoritative News (Measured Anchor)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="ttsSystemVoiceSelect">Mapped OS / Browser Voice (Fallback Inspector)</label>
+            <select id="ttsSystemVoiceSelect"></select>
+          </div>
+
+          <div class="form-group">
+            <div class="slider-header">
+              <label for="ttsTextInput">Speech Script (Long-Text &amp; Multi-Paragraph Ready)</label>
+              <span id="ttsCharCounter" class="mono-sm">0 chars | 0 words | 0 sentences</span>
+            </div>
+            <textarea id="ttsTextInput" rows="6" placeholder="Enter English or Hindi text here... नमस्ते, नेक्सोरा ऑडियो स्टूडियो में आपका स्वागत है।">Welcome to Nexora Audio X. This mobile production studio provides multi-stage voice cleaning, parametric tuning, non-destructive editing, and multi-track mixing.</textarea>
+          </div>
+
+          <div class="btn-row">
+            <button id="btnTtsPreviewVoice" class="btn btn-secondary">Preview Voice Sample</button>
+            <button id="btnTtsGenerateSpeak" class="btn btn-primary">Generate &amp; Speak</button>
+            <button id="btnTtsPause" class="btn btn-secondary" disabled>Pause</button>
+            <button id="btnTtsResume" class="btn btn-secondary" disabled>Resume</button>
+            <button id="btnTtsStop" class="btn btn-danger" disabled>Stop</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Neural Endpoint &amp; Audio Output</h3>
+          <div class="form-group">
+            <label for="ttsApiEndpoint">Configurable External Neural TTS Endpoint (POST)</label>
+            <input type="url" id="ttsApiEndpoint" placeholder="https://your-tts-proxy.example.com/v1/synthesize">
+          </div>
+          <div class="form-group">
+            <label for="ttsApiToken">Optional Bearer Token (Volatile Memory Only)</label>
+            <input type="password" id="ttsApiToken" placeholder="Optional API Token">
+          </div>
+
+          <div class="status-box">
+            <div><span>Generation Status:</span> <strong id="ttsGenStatus">Idle</strong></div>
+            <div><span>Active Segment:</span> <strong id="ttsActiveSegment">-</strong></div>
+          </div>
+
+          <audio id="ttsAudioPlayer" controls class="audio-player"></audio>
+
+          <div class="btn-row">
+            <button id="btnTtsRenderBuffer" class="btn btn-secondary">Synthesize Downloadable Audio Buffer</button>
+            <button id="btnTtsDownloadWav" class="btn btn-primary" disabled>Download TTS Audio (WAV)</button>
+            <button id="btnTtsSaveLib" class="btn btn-secondary" disabled>Save to Library</button>
+          </div>
+
+          <div class="btn-row" style="margin-top:0.5rem;">
+            <button id="btnTtsOpenSpeechCtrl" class="btn btn-sm">Open Advanced Speech Control (Feature 05)</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         FEATURE 05 — ADVANCED SPEECH CONTROL
+         =================================================================== -->
+    <section id="sec-speech-ctrl" class="studio-module">
+      <div class="module-header">
+        <div>
+          <span class="module-tag">FEATURE 05</span>
+          <h2>Advanced Speech Control &amp; Prosody Engine</h2>
+        </div>
+        <span id="speechCtrlSummaryBadge" class="badge badge-accent">Voice: Aarav | en-US</span>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>Prosody &amp; Delivery Parameters</h3>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="spCtrlSpeed">Speech Rate (Speed)</label>
+              <span id="valSpCtrlSpeed" class="mono-sm">1.00x</span>
+            </div>
+            <input type="range" id="spCtrlSpeed" min="0.5" max="2.0" step="0.05" value="1.0">
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="spCtrlPitch">Fundamental Pitch Multiplier</label>
+              <span id="valSpCtrlPitch" class="mono-sm">1.00</span>
+            </div>
+            <input type="range" id="spCtrlPitch" min="0.5" max="1.6" step="0.05" value="1.0">
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="spCtrlVolume">Output Gain / Volume</label>
+              <span id="valSpCtrlVolume" class="mono-sm">100%</span>
+            </div>
+            <input type="range" id="spCtrlVolume" min="10" max="100" step="5" value="100">
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="spCtrlSentencePause">Inter-Sentence Pause Duration</label>
+              <span id="valSpCtrlSentencePause" class="mono-sm">250 ms</span>
+            </div>
+            <input type="range" id="spCtrlSentencePause" min="0" max="1500" step="50" value="250">
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="spCtrlParaPause">Inter-Paragraph Pause Duration</label>
+              <span id="valSpCtrlParaPause" class="mono-sm">600 ms</span>
+            </div>
+            <input type="range" id="spCtrlParaPause" min="0" max="2500" step="100" value="600">
+          </div>
+
+          <div class="form-group">
+            <label for="spCtrlChunkMode">Segmentation Mode</label>
+            <select id="spCtrlChunkMode">
+              <option value="sentence" selected>Sentence-Level Precision Queue</option>
+              <option value="paragraph">Paragraph-Level Queue</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Custom Pronunciation Dictionary &amp; Live Controller</h3>
+          <p class="meta-footnote">
+            Define custom word or acronym phonetic replacements (`term = spoken form`, one per line) applied before synthesis in both Neural API and Browser engines.
+          </p>
+          <div class="form-group">
+            <label for="spCtrlPronunciation">Pronunciation Rules</label>
+            <textarea id="spCtrlPronunciation" rows="4" class="mono-input">NEXORA = Nek-sora
+DSP = Digital Signal Processing
+dBFS = decibels full scale</textarea>
+          </div>
+
+          <div class="btn-row">
+            <button id="btnSpCtrlPlay" class="btn btn-primary">Preview with Prosody Controls</button>
+            <button id="btnSpCtrlPause" class="btn btn-secondary" disabled>Pause</button>
+            <button id="btnSpCtrlResume" class="btn btn-secondary" disabled>Resume</button>
+            <button id="btnSpCtrlStop" class="btn btn-danger" disabled>Stop</button>
+          </div>
+
+          <h4>Parsed Segment Queue Inspector</h4>
+          <div id="spCtrlSegmentList" class="segment-queue-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         FEATURE 06 — PROFESSIONAL AUDIO EDITOR
+         =================================================================== -->
+    <section id="sec-editor" class="studio-module">
+      <div class="module-header">
+        <div>
+          <span class="module-tag">FEATURE 06</span>
+          <h2>Non-Destructive Timeline Audio Editor</h2>
+        </div>
+        <div class="history-badges">
+          <button id="btnEditorUndo" class="btn btn-sm" disabled>Undo (0)</button>
+          <button id="btnEditorRedo" class="btn btn-sm" disabled>Redo (0)</button>
+          <button id="btnEditorRevert" class="btn btn-sm" disabled>Revert Original</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="toolbar-row">
+          <div class="file-load-group">
+            <label class="btn btn-secondary" for="editorFileInput">Import Audio</label>
+            <input type="file" id="editorFileInput" accept="audio/*" hidden>
+            <label class="btn btn-secondary" for="editorAppendFileInput">Join / Append File</label>
+            <input type="file" id="editorAppendFileInput" accept="audio/*" hidden>
+            <button id="btnEditorUseActive" class="btn btn-secondary">Load Active Buffer</button>
+          </div>
+          <span id="editorBufferMeta" class="mono-sm">No buffer loaded</span>
+        </div>
+
+        <div class="canvas-wrap editor-canvas-container">
+          <canvas id="editorTimelineCanvas" width="900" height="28"></canvas>
+          <canvas id="editorWaveCanvas" width="900" height="170"></canvas>
+        </div>
+
+        <div class="selection-bar">
+          <div class="sel-input-group">
+            <label for="edSelStart">Selection Start (s)</label>
+            <input type="number" id="edSelStart" min="0" step="0.01" value="0.00">
+          </div>
+          <div class="sel-input-group">
+            <label for="edSelEnd">Selection End (s)</label>
+            <input type="number" id="edSelEnd" min="0" step="0.01" value="0.00">
+          </div>
+          <div class="sel-input-group">
+            <label for="edPlayhead">Cursor / Split Point (s)</label>
+            <input type="number" id="edPlayhead" min="0" step="0.01" value="0.00">
+          </div>
+          <button id="btnEditorSelectAll" class="btn btn-sm">Select All</button>
+        </div>
+
+        <div class="btn-row">
+          <button id="btnEditorPlaySel" class="btn btn-primary" disabled>Play Selection</button>
+          <button id="btnEditorPlayAll" class="btn btn-secondary" disabled>Play Entire Buffer</button>
+          <button id="btnEditorStop" class="btn btn-danger" disabled>Stop Playback</button>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>Surgical Region Operations</h3>
+          <div class="btn-grid">
+            <button id="btnEdTrim" class="btn btn-secondary" disabled>Trim (Keep Selection)</button>
+            <button id="btnEdCut" class="btn btn-secondary" disabled>Cut Selection Out</button>
+            <button id="btnEdSplit" class="btn btn-secondary" disabled>Split &amp; Gap at Cursor</button>
+            <button id="btnEdFadeIn" class="btn btn-secondary" disabled>Fade In Selection</button>
+            <button id="btnEdFadeOut" class="btn btn-secondary" disabled>Fade Out Selection</button>
+            <button id="btnEdInsertSilence" class="btn btn-secondary" disabled>Insert Silence at Cursor</button>
+          </div>
+          <div class="form-group" style="margin-top:0.75rem;">
+            <label for="edSilenceDuration">Silence Duration to Insert (seconds)</label>
+            <input type="number" id="edSilenceDuration" min="0.1" max="30" step="0.1" value="1.0">
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Region Gain, Speed &amp; Export</h3>
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="edGainDb">Gain Adjustment on Selection</label>
+              <span id="valEdGainDb" class="mono-sm">0.0 dB</span>
+            </div>
+            <input type="range" id="edGainDb" min="-24" max="18" step="0.5" value="0">
+            <button id="btnEdApplyGain" class="btn btn-sm" disabled>Apply Gain to Selection</button>
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="edSpeedFactor">Resample Speed Factor (Whole Buffer)</label>
+              <span id="valEdSpeedFactor" class="mono-sm">1.00x</span>
+            </div>
+            <input type="range" id="edSpeedFactor" min="0.5" max="2.0" step="0.05" value="1.0">
+            <button id="btnEdApplySpeed" class="btn btn-sm" disabled>Apply Speed Resample</button>
+          </div>
+
+          <hr class="divider">
+
+          <div class="btn-row">
+            <button id="btnEditorSaveLib" class="btn btn-primary" disabled>Save Edited Audio to Library</button>
+            <button id="btnEditorExportWav" class="btn btn-secondary" disabled>Export Edited WAV</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         FEATURE 07 — VOICE + BACKGROUND MUSIC MIXER
+         =================================================================== -->
+    <section id="sec-mixer" class="studio-module">
+      <div class="module-header">
+        <div>
+          <span class="module-tag">FEATURE 07</span>
+          <h2>Multi-Track Voice + Background Music Mixer</h2>
+        </div>
+        <span id="mixerStatusBadge" class="badge">Master Limiter: -1.0 dBFS Active</span>
+      </div>
+
+      <div class="grid-2">
+        <!-- Track 1: Voice -->
+        <div class="card">
+          <div class="track-header">
+            <h3>Track 1 — Lead Voice</h3>
+            <span id="mixVoiceMeta" class="mono-sm">Unloaded</span>
+          </div>
+          <div class="btn-row">
+            <label class="btn btn-sm" for="mixVoiceFileInput">Import Voice File</label>
+            <input type="file" id="mixVoiceFileInput" accept="audio/*" hidden>
+            <button id="btnMixUseActiveVoice" class="btn btn-sm">Load Active Studio Audio</button>
+          </div>
+          <canvas id="mixVoiceCanvas" class="mini-wave" width="500" height="75"></canvas>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="mixVoiceGain">Voice Track Level</label>
+              <span id="valMixVoiceGain" class="mono-sm">100%</span>
+            </div>
+            <input type="range" id="mixVoiceGain" min="0" max="150" value="100">
+          </div>
+
+          <label class="toggle-item">
+            <input type="checkbox" id="chkMixVoiceMute">
+            <span>Mute Voice Track</span>
+          </label>
+        </div>
+
+        <!-- Track 2: Background Music -->
+        <div class="card">
+          <div class="track-header">
+            <h3>Track 2 — Background Music Bed</h3>
+            <span id="mixMusicMeta" class="mono-sm">Unloaded</span>
+          </div>
+          <div class="btn-row">
+            <label class="btn btn-sm" for="mixMusicFileInput">Import Music File</label>
+            <input type="file" id="mixMusicFileInput" accept="audio/*" hidden>
+            <button id="btnMixGenAmbient" class="btn btn-sm">Generate Studio Ambient Bed</button>
+          </div>
+          <canvas id="mixMusicCanvas" class="mini-wave" width="500" height="75"></canvas>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="mixMusicGain">Background Music Level</label>
+              <span id="valMixMusicGain" class="mono-sm">35%</span>
+            </div>
+            <input type="range" id="mixMusicGain" min="0" max="150" value="35">
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="mixVoiceEntryDelay">Voice Entry Offset (Music Intro Lead-In)</label>
+              <span id="valMixVoiceEntryDelay" class="mono-sm">0.0 s</span>
+            </div>
+            <input type="range" id="mixVoiceEntryDelay" min="0" max="10" step="0.5" value="0">
+          </div>
+
+          <div class="toggle-list">
+            <label class="toggle-item">
+              <input type="checkbox" id="chkMixMusicMute">
+              <span>Mute Background Music</span>
+            </label>
+            <label class="toggle-item">
+              <input type="checkbox" id="chkMixAutoDuck" checked>
+              <span>Smart Voice Auto-Ducking (Lowers music by -8 dB during speech)</span>
+            </label>
+            <label class="toggle-item">
+              <input type="checkbox" id="chkMixLoopMusic" checked>
+              <span>Loop Music Bed to Match Voice Duration</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Master Balance &amp; Final Mixdown</h3>
+        <div class="slider-group">
+          <div class="slider-header">
+            <label for="mixBalanceCross">Voice / Music Master Balance Trim</label>
+            <span id="valMixBalanceCross" class="mono-sm">0 (Centered)</span>
+          </div>
+          <input type="range" id="mixBalanceCross" min="-50" max="50" value="0">
+        </div>
+
+        <div class="btn-row">
+          <button id="btnMixLivePreview" class="btn btn-secondary">Live Synchronized Preview</button>
+          <button id="btnMixStopPreview" class="btn btn-danger" disabled>Stop Preview</button>
+          <button id="btnMixRenderMixdown" class="btn btn-primary">Render Combined Master Mixdown</button>
+        </div>
+
+        <div class="canvas-wrap" style="margin-top:0.75rem;">
+          <canvas id="mixMasterCanvas" class="mini-wave" width="800" height="90"></canvas>
+          <span class="canvas-label">Rendered Master Mixdown Waveform</span>
+        </div>
+
+        <audio id="mixMasterPlayer" controls class="audio-player"></audio>
+
+        <div class="btn-row">
+          <button id="btnMixSaveLib" class="btn btn-primary" disabled>Save Final Mix to Library</button>
+          <button id="btnMixExportWav" class="btn btn-secondary" disabled>Export Mix (WAV)</button>
+          <button id="btnMixExportMp3" class="btn btn-secondary" disabled>Export Mix (MP3)</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         FEATURE 08 — PROFESSIONAL EXPORT & AUDIO LIBRARY
+         =================================================================== -->
+    <section id="sec-library" class="studio-module">
+      <div class="module-header">
+        <div>
+          <span class="module-tag">FEATURE 08</span>
+          <h2>Persistent Audio Library &amp; Multi-Format Export Engine</h2>
+        </div>
+        <span id="libCountBadge" class="badge">0 Saved Items</span>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>Multi-Format Master Exporter</h3>
+          <p class="meta-footnote">
+            Exports the currently active studio buffer or any library item using real binary encoders: 16-bit PCM RIFF WAV, LameJS IEEE-to-MP3 frame encoding, or MediaRecorder WebM/Opus stream encoding.
+          </p>
+
+          <div class="form-group">
+            <label for="exportFileName">Export Filename (without extension)</label>
+            <input type="text" id="exportFileName" value="Nexora_Master_Audio">
+          </div>
+
+          <div class="form-group">
+            <label for="exportFormatSelect">Target Format &amp; Codec Verification</label>
+            <select id="exportFormatSelect">
+              <option value="wav">WAV — Uncompressed 16-bit PCM (.wav)</option>
+              <option value="mp3">MP3 — LameJS 192 kbps MPEG-1 Layer III (.mp3)</option>
+              <option value="webm">WebM / Opus — Browser Native Container (.webm)</option>
+            </select>
+          </div>
+
+          <div id="exportCodecSupportNotice" class="meta-footnote">Checking encoder availability...</div>
+
+          <div class="progress-box">
+            <div class="slider-header">
+              <span id="exportStatusText">Export Engine Idle</span>
+              <span id="exportProgressPct" class="mono-sm">0%</span>
+            </div>
+            <div class="progress-track">
+              <div id="exportProgressBar" class="progress-fill"></div>
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button id="btnExportActiveBuffer" class="btn btn-primary">Encode &amp; Download Active Studio Buffer</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>IndexedDB Storage Diagnostics</h3>
+          <div class="meta-grid">
+            <div><span>Database Engine:</span> <strong id="dbStateText">Connecting...</strong></div>
+            <div><span>Stored Assets:</span> <strong id="dbItemCount">0</strong></div>
+            <div><span>Estimated Usage:</span> <strong id="dbStorageSize">0.00 MB</strong></div>
+            <div><span>MP3 Encoder (LameJS):</span> <strong id="dbMp3Support">Checking...</strong></div>
+          </div>
+          <div class="btn-row" style="margin-top:1rem;">
+            <label class="btn btn-secondary" for="libImportDirectInput">Import External Audio to Library</label>
+            <input type="file" id="libImportDirectInput" accept="audio/*" hidden>
+            <button id="btnLibRefresh" class="btn btn-sm">Refresh Library</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Saved Studio Assets (IndexedDB Persistent Library)</h3>
+        <div id="libraryListContainer" class="library-list">
+          <p class="empty-state">No audio assets saved yet. Record, clean, tune, edit, synthesize, or mix audio to populate your studio library.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="main.js"></script>
+</body>
+</html>
